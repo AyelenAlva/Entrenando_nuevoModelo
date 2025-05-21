@@ -1,59 +1,45 @@
 <!DOCTYPE html>
-<html lang="es">
+<html>
 <head>
-  <meta charset="UTF-8">
-  <title>Predicción de y = 2x² - 3x + 1</title>
-  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest"></script>
+  <title>Predicción con TensorFlow.js</title>
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
 </head>
 <body>
-  <h1>Predicción con TensorFlow.js</h1>
-  <p id="output"></p>
-
+  <h1>Predicción de y = 2x² - 3x + 1</h1>
   <script>
-    async function entrenarModelo() {
-      // 1. Crear modelo secuencial
-      const model = tf.sequential();
+    // Datos de entrada (xs) y salida (ys)
+    const xs = tf.tensor1d([-3, -2, -1, 0, 1, 2, 3, 4]);
+    const ys = tf.tensor1d(xs.arraySync().map(x => 2 * x * x - 3 * x + 1));
 
-      // 2. Agregar capa oculta (permite aprender no linealidades)
-      model.add(tf.layers.dense({ inputShape: [1], units: 10, activation: 'relu' }));
+    // Modelo secuencial
+    const model = tf.sequential();
 
-      // 3. Capa de salida (una sola neurona sin activación)
-      model.add(tf.layers.dense({ units: 1 }));
+    // Capa densa con activación no lineal (puede aprender funciones cuadráticas)
+    model.add(tf.layers.dense({inputShape: [1], units: 10, activation: 'relu'}));
+    model.add(tf.layers.dense({units: 1}));
 
-      // 4. Compilar el modelo
-      model.compile({
-        optimizer: tf.train.adam(0.01),
-        loss: 'meanSquaredError'
-      });
+    model.compile({
+      optimizer: tf.train.adam(0.1),
+      loss: 'meanSquaredError'
+    });
 
-      // 5. Generar datos de entrenamiento
-      const xs = tf.tensor1d([-3, -2, -1, 0, 1, 2, 3, 4, 5]);
-      const ys = xs.mul(xs).mul(2).sub(xs.mul(3)).add(1); // y = 2x² - 3x + 1
-
-      // 6. Entrenar el modelo
+    async function trainModel() {
       await model.fit(xs, ys, {
-        epochs: 300,
+        epochs: 200,
         callbacks: {
           onEpochEnd: (epoch, logs) => {
-            if (epoch % 50 === 0) {
-              console.log(`Época ${epoch}: pérdida = ${logs.loss}`);
-            }
+            console.log(`Epoch ${epoch + 1}: loss = ${logs.loss.toFixed(4)}`);
           }
         }
       });
 
-      // 7. Hacer una predicción
-      const xTest = tf.tensor1d([6]);
-      const yPred = model.predict(xTest);
-
-      // 8. Mostrar resultado
-      yPred.data().then(result => {
-        document.getElementById("output").innerText =
-          `Predicción para x = 6: y ≈ ${result[0].toFixed(2)} (valor real: 2*6² - 3*6 + 1 = 55)`;
-      });
+      // Probar el modelo
+      const testX = tf.tensor1d([5, 6, 7]);
+      const pred = model.predict(testX);
+      pred.print(); // Mostrar los valores predichos
     }
 
-    entrenarModelo();
+    trainModel();
   </script>
 </body>
 </html>
